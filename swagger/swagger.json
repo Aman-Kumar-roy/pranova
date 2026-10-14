@@ -1,0 +1,1716 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PRANOVA Healthcare Coordination Platform - REST API",
+    "version": "1.0.0",
+    "description": "\n**PRANOVA** is a headless, API-first Healthcare Coordination Engine powering:\n- **Admin Web Console** (React-Admin Web)\n- **Patient Mobile App** (Flutter Native)\n- **Care Manager Mobile App** (Flutter Native)\n\n### Authentication\nMost endpoints require a valid JWT Bearer token in the `Authorization` header:\n```http\nAuthorization: Bearer <ACCESS_TOKEN>\n```\nUse the **Authorize** button below to paste your Admin JWT token for interactive testing.\n    ",
+    "contact": {
+      "name": "PRANOVA Engineering Team",
+      "email": "engineering@pranova.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api/v1",
+      "description": "Local Development Server (v1)"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Enter your JWT Bearer token obtained from /auth/admin/login or /auth/otp/verify"
+      }
+    },
+    "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Operation completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "nullable": true
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "example": 42
+              },
+              "page": {
+                "type": "integer",
+                "example": 1
+              },
+              "perPage": {
+                "type": "integer",
+                "example": 10
+              }
+            }
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-15T00:00:00.000Z"
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "example": "Resource not found"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "path": {
+            "type": "string",
+            "example": "/api/v1/cases/xyz"
+          },
+          "method": {
+            "type": "string",
+            "example": "GET"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "PATIENT",
+              "CARE_MANAGER",
+              "FAMILY_MEMBER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "SUSPENDED"
+            ]
+          },
+          "isPhoneVerified": {
+            "type": "boolean"
+          },
+          "isEmailVerified": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Provider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Fortis Hospital Indiranagar"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "HOSPITAL",
+              "LAB",
+              "CLINIC",
+              "AMBULANCE",
+              "PHARMACY"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "DEACTIVATED"
+            ]
+          },
+          "licenseNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "contactPerson": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "example": "+918012345678"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "example": "100 Feet Rd, HAL 2nd Stage"
+          },
+          "city": {
+            "type": "string",
+            "example": "Bengaluru"
+          },
+          "state": {
+            "type": "string",
+            "example": "Karnataka"
+          },
+          "pincode": {
+            "type": "string",
+            "example": "560038"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 12.9716
+          },
+          "longitude": {
+            "type": "number",
+            "example": 77.5946
+          },
+          "rating": {
+            "type": "number",
+            "example": 4.8
+          },
+          "operatingHours": {
+            "type": "string",
+            "example": "24/7 Emergency Care"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Case": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "caseNumber": {
+            "type": "string",
+            "example": "PRN-2026-9812"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "P1",
+              "P2",
+              "P3"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "ASSIGNED",
+              "IN_PROGRESS",
+              "RESOLVED",
+              "CANCELLED"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "example": "EMERGENCY SOS: Acute Medical Distress"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "triggerSource": {
+            "type": "string",
+            "enum": [
+              "SOS_BUTTON",
+              "PATIENT_REQUEST",
+              "ADMIN_MANUAL",
+              "CARE_MANAGER"
+            ]
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "careManagerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "providerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "incidentAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "incidentLatitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "incidentLongitude": {
+            "type": "number",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "assignedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "CaseTimeline": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "caseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string",
+            "example": "CASE_ASSIGNED"
+          },
+          "oldStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "newStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorRole": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AuditLog": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string",
+            "example": "ASSIGN_CASE"
+          },
+          "resource": {
+            "type": "string",
+            "example": "Case"
+          },
+          "resourceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorRole": {
+            "type": "string",
+            "nullable": true
+          },
+          "endpoint": {
+            "type": "string",
+            "example": "/api/v1/cases/xyz/assign"
+          },
+          "httpMethod": {
+            "type": "string",
+            "example": "PATCH"
+          },
+          "status": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "ipAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EmergencySosRequest": {
+        "type": "object",
+        "required": [
+          "patientId"
+        ],
+        "properties": {
+          "patientId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Patient User UUID"
+          },
+          "patientPhone": {
+            "type": "string",
+            "example": "+919123456789"
+          },
+          "incidentLatitude": {
+            "type": "number",
+            "example": 12.9784
+          },
+          "incidentLongitude": {
+            "type": "number",
+            "example": 77.6408
+          },
+          "incidentAddress": {
+            "type": "string",
+            "example": "104, Indiranagar 100ft Road, Bengaluru"
+          },
+          "description": {
+            "type": "string",
+            "example": "Patient reports severe acute chest tightness and dyspnea"
+          }
+        }
+      },
+      "AssignCaseRequest": {
+        "type": "object",
+        "required": [
+          "careManagerId"
+        ],
+        "properties": {
+          "careManagerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Care Manager User UUID"
+          },
+          "notes": {
+            "type": "string",
+            "example": "Immediate field triage dispatched"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/providers": {
+      "get": {
+        "summary": "List Healthcare Providers with type, status, and search filters",
+        "tags": [
+          "Providers Directory"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "perPage",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HOSPITAL",
+                "LAB",
+                "CLINIC",
+                "AMBULANCE",
+                "PHARMACY"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "PAUSED",
+                "DEACTIVATED"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Providers list retrieved"
+          }
+        }
+      },
+      "post": {
+        "summary": "Onboard a new Healthcare Provider facility",
+        "tags": [
+          "Providers Directory"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "type",
+                  "phone",
+                  "address",
+                  "city",
+                  "state",
+                  "pincode"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Apollo Speciality Hospital"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "HOSPITAL",
+                      "LAB",
+                      "CLINIC",
+                      "AMBULANCE",
+                      "PHARMACY"
+                    ]
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "+918023456789"
+                  },
+                  "address": {
+                    "type": "string",
+                    "example": "154/11 Bannerghatta Road"
+                  },
+                  "city": {
+                    "type": "string",
+                    "example": "Bengaluru"
+                  },
+                  "state": {
+                    "type": "string",
+                    "example": "Karnataka"
+                  },
+                  "pincode": {
+                    "type": "string",
+                    "example": "560076"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Provider onboarded successfully"
+          }
+        }
+      }
+    },
+    "/providers/{id}": {
+      "patch": {
+        "summary": "Update Provider details",
+        "tags": [
+          "Providers Directory"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Deactivate / Delete Provider facility",
+        "tags": [
+          "Providers Directory"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider removed or deactivated"
+          }
+        }
+      }
+    },
+    "/providers/{id}/status": {
+      "patch": {
+        "summary": "Transition Provider status (ACTIVE / PAUSED / DEACTIVATED)",
+        "tags": [
+          "Providers Directory"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "PAUSED",
+                      "DEACTIVATED"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider status transitioned"
+          }
+        }
+      }
+    },
+    "/patients": {
+      "get": {
+        "summary": "List Patients with search and demographic filters",
+        "tags": [
+          "Patients"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "perPage",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patients list retrieved"
+          }
+        }
+      },
+      "post": {
+        "summary": "Register a new Patient and clinical profile",
+        "tags": [
+          "Patients"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phone",
+                  "firstName",
+                  "lastName"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "example": "+919876543210"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "ananya.iyer@example.com"
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "example": "Ananya"
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "example": "Iyer"
+                  },
+                  "bloodGroup": {
+                    "type": "string",
+                    "example": "B+"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "Male",
+                      "Female",
+                      "Other"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Patient created successfully"
+          }
+        }
+      }
+    },
+    "/patients/{id}": {
+      "patch": {
+        "summary": "Update Patient record and medical profile",
+        "tags": [
+          "Patients"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patient updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete or deactivate Patient record",
+        "tags": [
+          "Patients"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patient removed"
+          }
+        }
+      }
+    },
+    "/cases/sos": {
+      "post": {
+        "summary": "Trigger P1 Emergency SOS and broadcast alert to connected Admin consoles",
+        "tags": [
+          "Emergency SOS & Cases"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmergencySosRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Emergency SOS provisioned and alert broadcasted via Socket.io",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/export/excel": {
+      "post": {
+        "summary": "Export case management records to Excel (.xlsx) buffer",
+        "tags": [
+          "Cases & Compliance Export"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "example": "Monthly clinical quality assurance audit"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Binary spreadsheet download",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Export case records to Excel via GET (Requires reason query param)",
+        "tags": [
+          "Cases & Compliance Export"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "reason",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Binary spreadsheet download"
+          }
+        }
+      }
+    },
+    "/cases": {
+      "get": {
+        "summary": "List Healthcare Coordination Cases (Paginated & Filterable)",
+        "tags": [
+          "Emergency SOS & Cases"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "perPage",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "in": "query",
+            "name": "priority",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "P1",
+                "P2",
+                "P3"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "ASSIGNED",
+                "IN_PROGRESS",
+                "RESOLVED",
+                "CANCELLED"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cases list retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Case manually",
+        "tags": [
+          "Emergency SOS & Cases"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "patientId",
+                  "title"
+                ],
+                "properties": {
+                  "patientId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "title": {
+                    "type": "string",
+                    "example": "Post-Operative Wound Care & Dressing"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "P1",
+                      "P2",
+                      "P3"
+                    ],
+                    "default": "P2"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "providerId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Case created successfully"
+          }
+        }
+      }
+    },
+    "/cases/{id}/assign": {
+      "patch": {
+        "summary": "Assign Care Manager to Case (Atomically records CaseTimeline entry)",
+        "tags": [
+          "Emergency SOS & Cases"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignCaseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Care Manager assigned and CaseTimeline recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}/status": {
+      "patch": {
+        "summary": "Update Case lifecycle status",
+        "tags": [
+          "Emergency SOS & Cases"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "OPEN",
+                      "ASSIGNED",
+                      "IN_PROGRESS",
+                      "RESOLVED",
+                      "CANCELLED"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status updated"
+          }
+        }
+      }
+    },
+    "/care-managers": {
+      "get": {
+        "summary": "List Care Managers with duty availability, caseload, and search filters",
+        "tags": [
+          "Care Managers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "perPage",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "in": "query",
+            "name": "isAvailable",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Care Managers roster retrieved"
+          }
+        }
+      },
+      "post": {
+        "summary": "Onboard a new Field Care Manager",
+        "tags": [
+          "Care Managers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phone",
+                  "firstName",
+                  "lastName"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "example": "+919876500001"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "cm.priya@pranova.com"
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "example": "Priya"
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "example": "Sharma"
+                  },
+                  "employeeCode": {
+                    "type": "string",
+                    "example": "CM-2026-001"
+                  },
+                  "specialization": {
+                    "type": "string",
+                    "example": "Emergency Trauma & Triage"
+                  },
+                  "licenseNumber": {
+                    "type": "string",
+                    "example": "MED-RN-48192"
+                  },
+                  "assignedZone": {
+                    "type": "string",
+                    "example": "Bengaluru Central"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Care Manager onboarded"
+          }
+        }
+      }
+    },
+    "/care-managers/{id}": {
+      "patch": {
+        "summary": "Update Care Manager details or telemetry",
+        "tags": [
+          "Care Managers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Care Manager updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Deactivate Care Manager",
+        "tags": [
+          "Care Managers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Care Manager removed or deactivated"
+          }
+        }
+      }
+    },
+    "/auth/admin/login": {
+      "post": {
+        "summary": "Authenticate Administrator (Web Panel)",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "admin@pranova.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "example": "Admin@123456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful, returns JWT access and refresh tokens",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/auth/admin/register": {
+      "post": {
+        "summary": "Register a new Administrator (Admin Only)",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password",
+                  "firstName",
+                  "lastName"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "ops@pranova.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "OpsSecure@2026"
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "example": "Sarah"
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "example": "Jenkins"
+                  },
+                  "department": {
+                    "type": "string",
+                    "example": "Clinical Operations"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Administrator registered successfully"
+          },
+          "403": {
+            "description": "Forbidden - Admin privileges required"
+          }
+        }
+      }
+    },
+    "/auth/otp/send": {
+      "post": {
+        "summary": "Dispatch OTP to mobile phone (Patient / Care Manager)",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phone"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "example": "+919876543210"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP dispatched successfully (Demo code 123456)"
+          }
+        }
+      }
+    },
+    "/auth/otp/verify": {
+      "post": {
+        "summary": "Verify OTP and establish authenticated mobile session",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phone",
+                  "otp"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "example": "+919876543210"
+                  },
+                  "otp": {
+                    "type": "string",
+                    "example": "123456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP verified and session tokens issued"
+          }
+        }
+      }
+    },
+    "/auth/refresh-token": {
+      "post": {
+        "summary": "Refresh JWT Access Token",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "description": "Refresh token (also accepted via HttpOnly cookie)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token refreshed successfully"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Get current authenticated user profile",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/audit-logs": {
+      "get": {
+        "summary": "Retrieve immutable compliance Audit Logs (Searchable & Filterable)",
+        "tags": [
+          "Audit Logs & Compliance"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "perPage",
+            "schema": {
+              "type": "integer",
+              "default": 15
+            }
+          },
+          {
+            "in": "query",
+            "name": "resource",
+            "schema": {
+              "type": "string",
+              "example": "Case"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "schema": {
+              "type": "string",
+              "example": "ASSIGN_CASE"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit logs retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audit-logs/{id}": {
+      "get": {
+        "summary": "Inspect individual immutable Audit Log transaction with payload snapshot",
+        "tags": [
+          "Audit Logs & Compliance"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit log transaction detail"
+          },
+          "404": {
+            "description": "Audit log entry not found"
+          }
+        }
+      }
+    }
+  },
+  "tags": []
+}

@@ -1,0 +1,301 @@
+// PRANOVA Healthcare Coordination Platform - Database Schema
+// Strict Relational Integrity with PostgreSQL & Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------
+// ENUMS
+// ----------------------------------------------------
+
+enum Role {
+  ADMIN
+  PATIENT
+  CARE_MANAGER
+  FAMILY_MEMBER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum ProviderType {
+  HOSPITAL
+  LAB
+  CLINIC
+  AMBULANCE
+  PHARMACY
+}
+
+enum ProviderStatus {
+  ACTIVE
+  PAUSED
+  DEACTIVATED
+}
+
+enum CasePriority {
+  P1 // Emergency SOS
+  P2 // Urgent / Post-Op
+  P3 // Routine Coordination
+}
+
+enum CaseStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CANCELLED
+}
+
+enum CaseTriggerSource {
+  SOS_BUTTON
+  PATIENT_REQUEST
+  ADMIN_MANUAL
+  CARE_MANAGER
+}
+
+enum ConsentStatus {
+  GRANTED
+  REVOKED
+  EXPIRED
+}
+
+// ----------------------------------------------------
+// MODELS
+// ----------------------------------------------------
+
+model User {
+  id              String      @id @default(uuid())
+  email           String?     @unique
+  phone           String?     @unique
+  passwordHash    String?
+  role            Role
+  status          UserStatus  @default(ACTIVE)
+  isPhoneVerified Boolean     @default(false)
+  isEmailVerified Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Profile Relations
+  adminProfile       AdminProfile?
+  patientProfile     PatientProfile?
+  careManagerProfile CareManagerProfile?
+
+  // Domain Relations
+  familyMembersAsPatient FamilyMember[] @relation("PatientFamilyMembers")
+  casesAsPatient         Case[]         @relation("PatientCases")
+  casesAsCareManager     Case[]         @relation("CareManagerCases")
+  caseTimelineEntries    CaseTimeline[] @relation("ActorTimelineEntries")
+  consentsGiven          Consent[]      @relation("PatientConsents")
+  consentsManaged        Consent[]      @relation("CareManagerConsents")
+  auditLogs              AuditLog[]     @relation("UserAuditLogs")
+
+  @@index([role])
+  @@index([phone])
+  @@index([email])
+}
+
+model AdminProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName   String
+  lastName    String
+  department  String?
+  mfaEnabled  Boolean  @default(false)
+  mfaSecret   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PatientProfile {
+  id                   String    @id @default(uuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName            String
+  lastName             String
+  dateOfBirth          DateTime?
+  gender               String?
+  bloodGroup           String?
+  emergencyContactName String?
+  emergencyContactPhone String?
+  primaryAddress       String?
+  city                 String?
+  state                String?
+  pincode              String?
+  latitude             Float?
+  longitude            Float?
+  medicalHistory       Json?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+model CareManagerProfile {
+  id                 String    @id @default(uuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName          String
+  lastName           String
+  employeeCode       String?   @unique
+  specialization     String?
+  licenseNumber      String?
+  isAvailable        Boolean   @default(true)
+  currentLatitude    Float?
+  currentLongitude   Float?
+  lastLocationUpdate DateTime?
+  assignedZone       String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([isAvailable])
+}
+
+model FamilyMember {
+  id                        String   @id @default(uuid())
+  patientId                 String
+  patient                   User     @relation("PatientFamilyMembers", fields: [patientId], references: [id], onDelete: Cascade)
+  name                      String
+  relationship              String
+  phone                     String
+  email                     String?
+  isEmergencyContact        Boolean  @default(false)
+  isAuthorizedRepresentative Boolean  @default(false)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([patientId])
+}
+
+model Consent {
+  id            String        @id @default(uuid())
+  patientId     String
+  patient       User          @relation("PatientConsents", fields: [patientId], references: [id], onDelete: Cascade)
+  providerId    String?
+  provider      Provider?     @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  careManagerId String?
+  careManager   User?         @relation("CareManagerConsents", fields: [careManagerId], references: [id], onDelete: SetNull)
+  purpose       String
+  scope         String?
+  status        ConsentStatus @default(GRANTED)
+  grantedAt     DateTime      @default(now())
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([patientId])
+  @@index([status])
+}
+
+model Provider {
+  id             String         @id @default(uuid())
+  name           String
+  type           ProviderType
+  status         ProviderStatus @default(ACTIVE)
+  licenseNumber  String?
+  contactPerson  String?
+  phone          String
+  email          String?
+  address        String
+  city           String
+  state          String
+  pincode        String
+  latitude       Float?
+  longitude      Float?
+  operatingHours String?
+  rating         Float?         @default(0.0)
+  cases          Case[]
+  consents       Consent[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([type])
+  @@index([status])
+}
+
+model Case {
+  id                String            @id @default(uuid())
+  caseNumber        String            @unique
+  patientId         String
+  patient           User              @relation("PatientCases", fields: [patientId], references: [id], onDelete: Restrict)
+  careManagerId     String?
+  careManager       User?             @relation("CareManagerCases", fields: [careManagerId], references: [id], onDelete: SetNull)
+  providerId        String?
+  provider          Provider?         @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  priority          CasePriority
+  status            CaseStatus        @default(OPEN)
+  title             String
+  description       String?
+  triggerSource     CaseTriggerSource @default(PATIENT_REQUEST)
+  incidentLatitude  Float?
+  incidentLongitude Float?
+  incidentAddress   String?
+  assignedAt        DateTime?
+  resolvedAt        DateTime?
+  metadata          Json?
+  timeline          CaseTimeline[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([patientId])
+  @@index([careManagerId])
+  @@index([priority])
+  @@index([status])
+}
+
+model CaseTimeline {
+  id                String      @id @default(uuid())
+  caseId            String
+  case              Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  actorId           String?
+  actor             User?       @relation("ActorTimelineEntries", fields: [actorId], references: [id], onDelete: SetNull)
+  actorRole         Role?
+  action            String
+  oldStatus         CaseStatus?
+  newStatus         CaseStatus?
+  notes             String?
+  locationLatitude  Float?
+  locationLongitude Float?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([caseId])
+  @@index([actorId])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  actorId        String?
+  actor          User?    @relation("UserAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail     String?
+  actorRole      Role?
+  action         String
+  resource       String
+  resourceId     String?
+  endpoint       String
+  httpMethod     String
+  requestPayload Json?
+  previousState  Json?
+  newState       Json?
+  reason         String?
+  ipAddress      String?
+  userAgent      String?
+  status         String   @default("SUCCESS")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([actorId])
+  @@index([resource])
+  @@index([action])
+  @@index([createdAt])
+}
